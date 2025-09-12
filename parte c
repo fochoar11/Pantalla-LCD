@@ -1,0 +1,49 @@
+#include <Arduino.h>
+#include <LiquidCrystal.h>
+
+#define pin_rs 38
+#define pin_e  14
+#define pin_d4 39
+#define pin_d5 21
+#define pin_d6 45
+#define pin_d7 47
+
+LiquidCrystal lcd(pin_rs, pin_e, pin_d4, pin_d5, pin_d6, pin_d7);
+
+const int pin_pot1 = 1;
+const int pin_pot2 = 2;
+
+unsigned long lastui = 0;
+const unsigned long ui_ms = 100;
+
+static void printadc4(int v) {
+  lcd.setCursor(0, 1);
+  if (v < 1000) lcd.print(' ');
+  if (v < 100)  lcd.print(' ');
+  if (v < 10)   lcd.print(' ');
+  lcd.print(v);
+}
+
+void setup() {
+  lcd.begin(16, 2);
+  lcd.setCursor(0, 0);
+  lcd.print("Pot1  Pot2  Cont");
+  lcd.setCursor(0, 1);
+  for (int i = 0; i < 16; i++) lcd.print(' ');
+  pinMode(pin_pot1, INPUT);
+  pinMode(pin_pot2, INPUT);
+}
+
+void loop() {
+  unsigned long now = millis();
+  if (now - lastui >= ui_ms) {
+    lastui = now;
+    int adc1 = analogRead(pin_pot1);
+    printadc4(adc1);
+    int adc2 = analogRead(pin_pot2);
+    float v2 = (adc2 / 4095.0f) * 3.3f;
+    lcd.setCursor(6, 1);
+    lcd.print(v2, 2);
+    lcd.print("V ");
+  }
+}
