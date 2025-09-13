@@ -1,0 +1,124 @@
+//******************************************/
+// Universidad del Valle de Guatemala
+// BE3029 - Electronica Digital 2
+// Javier Ochoa
+// 12/09/2025
+// Pantalla LCD
+// MCU: ESP32-S3 dev kit
+//******************************************/
+
+//******************************************/
+// Librerias
+//******************************************/
+#include <Arduino.h>
+#include <LiquidCrystal.h>
+
+//******************************************/
+// Definiciones
+//******************************************/
+const int pot1 = 1;
+const int pot2 = 2;
+const int btn1 = 18;
+const int btn2 = 10;
+
+#define pin_rs 38
+#define pin_e  14
+#define pin_d4 39
+#define pin_d5 21
+#define pin_d6 45
+#define pin_d7 47
+
+//******************************************/
+// Prototipos de funciones
+//******************************************/
+static void printadc4(int v);
+static void printcnt3(uint8_t v);
+
+//******************************************/
+// Variables globales
+//******************************************/
+LiquidCrystal lcd(pin_rs, pin_e, pin_d4, pin_d5, pin_d6, pin_d7);
+
+unsigned long lastui = 0;
+const unsigned long ui_ms = 100;
+
+uint8_t contador = 0;
+bool ultimo_btn1 = LOW, ultimo_btn2 = LOW;
+unsigned long t_btn1 = 0, t_btn2 = 0;
+const unsigned long deb = 25;
+
+//******************************************/
+// ISRs Rutinas de Interrupcion
+//******************************************/
+// n/a
+
+//******************************************/
+// Configuracion
+//******************************************/
+void setup() {
+  lcd.begin(16, 2);
+  lcd.setCursor(0, 0);
+  lcd.print("Pot1:   Pot2:   Cont:");
+  lcd.setCursor(0, 1);
+  for (int i = 0; i < 16; i++) lcd.print(' ');
+
+  pinMode(pot1, INPUT);
+  pinMode(pot2, INPUT);
+  pinMode(btn1, INPUT_PULLDOWN);
+  pinMode(btn2, INPUT_PULLDOWN);
+}
+
+//******************************************/
+// Loop Principal
+//******************************************/
+void loop() {
+  unsigned long ahora = millis();
+  bool estado_btn1 = digitalRead(btn1);
+  bool estado_btn2 = digitalRead(btn2);
+
+  if (estado_btn1 != ultimo_btn1 && (ahora - t_btn1) > deb) {
+    t_btn1 = ahora;
+    ultimo_btn1 = estado_btn1;
+    if (estado_btn1 == HIGH) contador++;
+  }
+  if (estado_btn2 != ultimo_btn2 && (ahora - t_btn2) > deb) {
+    t_btn2 = ahora;
+    ultimo_btn2 = estado_btn2;
+    if (estado_btn2 == HIGH) contador--;
+  }
+
+  if (ahora - lastui >= ui_ms) {
+    lastui = ahora;
+
+    int adc1 = analogRead(pot1);
+    printadc4(adc1);
+
+    int adc2 = analogRead(pot2);
+    float v2 = (adc2 / 4095.0f) * 3.3f;
+    lcd.setCursor(6, 1);
+    lcd.print("     ");
+    lcd.setCursor(6, 1);
+    lcd.print(v2, 2);
+    lcd.print("V");
+
+    printcnt3(contador);
+  }
+}
+
+//******************************************/
+// Otras funciones
+//******************************************/
+static void printadc4(int v) {
+  lcd.setCursor(0, 1);
+  if (v < 1000) lcd.print(' ');
+  if (v < 100)  lcd.print(' ');
+  if (v < 10)   lcd.print(' ');
+  lcd.print(v);
+}
+
+static void printcnt3(uint8_t v) {
+  lcd.setCursor(12, 1);
+  if (v < 100) lcd.print(' ');
+  if (v < 10)  lcd.print(' ');
+  lcd.print((int)v);
+}
